@@ -37,6 +37,6 @@ namespace rm_auto_aim
         */
         std::vector<cv::Point2f> kpt;
     };
-
+    
 }
 #endif

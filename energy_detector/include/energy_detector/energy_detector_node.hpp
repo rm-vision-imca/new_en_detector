@@ -22,7 +22,7 @@
 #include <string>
 #include <vector>
 
-#include "energy_detector/detector.hpp"
+#include "energy_detector/En_detector.hpp"
 #include "energy_detector/pnp_solver.hpp"
 #include "auto_aim_interfaces/msg/leafs.hpp"
 #include "auto_aim_interfaces/msg/debug_leafs.hpp"
@@ -31,15 +31,17 @@ class EnergyDetector : public rclcpp::Node {
 public:
     EnergyDetector(const rclcpp::NodeOptions& options);
     cv::Mat VideoTest(cv::Mat &img);
+    long long int count=0;
+    long double sum_latency=0;
 private:
     void ImageCallBack(const sensor_msgs::msg::Image::SharedPtr _ros_image);
     void createDebugPublishers();
     void destroyDebugPublishers();
-    std::unique_ptr<Detector> initDetector();
+    std::unique_ptr<En_Detector> initDetector();
     std::vector<Leaf> detectLeafs(const sensor_msgs::msg::Image::ConstSharedPtr & img_msg);
     void publishMarkers();
     // Energy_leaf Detector
-    std::unique_ptr<Detector>detector_;
+    std::unique_ptr<En_Detector>detector_;
 
     // Detected leafs && R publisher
     auto_aim_interfaces::msg::Leafs leafs_msg_;
@@ -63,6 +65,7 @@ private:
     std::shared_ptr<rclcpp::ParameterCallbackHandle> debug_cb_handle_;
     rclcpp::Publisher<auto_aim_interfaces::msg::DebugLeafs>::SharedPtr leafs_data_pub;
     image_transport::Publisher result_img_pub_;
+    image_transport::Publisher binary_img_pub_;
 
     // Image subscrpition
     rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr img_sub_;

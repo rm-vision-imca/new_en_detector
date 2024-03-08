@@ -67,6 +67,9 @@ namespace rm_auto_aim
     std::stringstream latency_ss;
     latency_ss << "Latency: " << latency << "ms" << std::endl; // 计算图像处理的延迟输出到日志中
     auto latency_s = latency_ss.str();
+    std::cout<<latency_s<<std::endl;
+    sum_latency+=latency;
+    count++;
     detector_->drawRuselt(result_img);
     cv::putText(
           result_img, latency_s, cv::Point(10, 30), cv::FONT_HERSHEY_SIMPLEX, 1.0, cv::Scalar(0, 255, 0), 2);
@@ -84,6 +87,10 @@ namespace rm_auto_aim
       leaf_msg.pose.position.z = leaf.kpt[4].x;
       leaf_msg.type = LEAF_TYPE_STR[static_cast<int>(leaf.leaf_type)];
       leafs_msg_.leafs.emplace_back(leaf_msg);
+      //R info 
+      leaf_msg.r_center.x=0;
+      leaf_msg.r_center.y=detector_->R_Point.y;
+      leaf_msg.r_center.z=detector_->R_Point.x;
     }
     leafs_msg_.header.stamp = this->now();
     leafs_msg_.header.frame_id = "image";
@@ -108,10 +115,9 @@ namespace rm_auto_aim
         leaf_msg.leaf_center.y = leaf.kpt[4].y;
         leaf_msg.leaf_center.z = leaf.kpt[4].x;
 
-        // R info
-        // leaf_msg.r_center.x = 0;
-        // leaf_msg.r_center.y = leaf.kpt[2].y;
-        // leaf_msg.r_center.z = leaf.kpt[2].x;
+        leaf_msg.r_center.x=0;
+        leaf_msg.r_center.y=detector_->R_Point.y;
+        leaf_msg.r_center.z=detector_->R_Point.x;
 
         // prob
         leaf_msg.prob = leaf.prob;
@@ -185,12 +191,16 @@ namespace rm_auto_aim
     result_img_pub_.shutdown();
   }
 
-  std::unique_ptr<Detector> EnergyDetector::initDetector()
+  std::unique_ptr<En_Detector> EnergyDetector::initDetector()
   {
     RCLCPP_INFO(this->get_logger(), "<节点初始化> 检测器参数加载中");
     rcl_interfaces::msg::ParameterDescriptor param_desc;
     // conf_threshold
     param_desc.integer_range.resize(1);
+    param_desc.integer_range[0].step = 1;
+    param_desc.integer_range[0].from_value = 0;
+    param_desc.integer_range[0].to_value = 255;
+    int binary_thres = declare_parameter("binary_thres", 100, param_desc);
     param_desc.integer_range[0].step = 0.01;
     param_desc.integer_range[0].from_value = 0.0;
     param_desc.integer_range[0].to_value = 1.0;
@@ -204,7 +214,7 @@ namespace rm_auto_aim
     param_desc.integer_range[0].from_value = 0;
     param_desc.integer_range[0].to_value = 1;
     auto detect_color = declare_parameter("detect_color", RED, param_desc);
-    auto detector = std::make_unique<Detector>(nms_threshold, conf_threshold, detect_color);
+    auto detector = std::make_unique<En_Detector>(nms_threshold, conf_threshold, detect_color,binary_thres);
     return detector;
   }
 
@@ -216,6 +226,7 @@ namespace rm_auto_aim
     detector_->CONF_THRESHOLD = get_parameter("conf_threshold").as_double();
     detector_->NMS_THRESHOLD = get_parameter("nms_threshold").as_double();
     detector_->detect_color = get_parameter("detect_color").as_int();
+    detector_->binary_thres=get_parameter("binary_thres").as_int();
     auto leafs = detector_->detect(img); // 识别
 
     auto final_time = this->now();
@@ -224,6 +235,8 @@ namespace rm_auto_aim
     // Publish debug info
     if (debug_)
     {
+      binary_img_pub_.publish(
+      cv_bridge::CvImage(img_msg->header, "mono8", detector_->bin).toImageMsg());
       leafs_data_pub->publish(detector_->debug_leafs);
       cv::circle(img, cam_center_, 5, cv::Scalar(255, 0, 0), 2);
       detector_->drawRuselt(img);

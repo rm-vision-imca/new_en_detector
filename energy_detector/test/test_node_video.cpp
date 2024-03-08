@@ -1,5 +1,5 @@
 #include <string>
-#include "energy_detector/detector.hpp"
+#include "energy_detector/En_detector.hpp"
 #include "gtest/gtest.h"
 #include <rclcpp/executors.hpp>
 #include <rclcpp/node_options.hpp>
@@ -64,7 +64,7 @@ TEST(energy_detector, test_node_video)
     auto node = std::make_shared<rm_auto_aim::EnergyDetector>(options);
     auto test_node = std::make_shared<Test_node>(options);
     std::string video_name[]={"buff_blue.mp4","2xfile.mp4","file.mp4","比赛打符高环数合集.mp4","环数检测视频.mp4","快速激活大能量机关视频.mp4","en1.mp4"};
-    std::string video_path = std::string(TEST_DIR) + "/video/"+video_name[5];
+    std::string video_path = std::string(TEST_DIR) + "/video/"+video_name[1];
     //std::cout << "读取视频中\n";
     cv::VideoCapture cap(video_path);
     //std::cout << "初始化成功\n";
@@ -87,6 +87,7 @@ TEST(energy_detector, test_node_video)
         if (!cap.read(frame))
             break;
     }
+    std::cout<<"avg latency:"<<node->sum_latency/node->count<<std::endl;
 }
 int main(int argc, char **argv)
 {
