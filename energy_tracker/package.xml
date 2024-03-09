@@ -4,25 +4,24 @@
   <name>energy_tracker</name>
   <version>0.0.0</version>
   <description>TODO: Package description</description>
-  <maintainer email="1074785246@qq.com">dfg</maintainer>
+  <maintainer email="work@todo.todo">work</maintainer>
   <license>TODO: License declaration</license>
 
-  <depend>std_msgs</depend>
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <depend>rclcpp</depend>
+  <depend>rclcpp_components</depend>
+  <depend>eigen</depend>
+  <depend>angles</depend>
   <depend>geometry_msgs</depend>
-  <depend>target_msg</depend>
+  <depend>std_msgs</depend>
   <depend>tf2_geometry_msgs</depend>
-  <depend>std_srvs</depend>
-  <depend>visualization_msgs</depend>
-  <depend>message_filters</depend>
   <depend>auto_aim_interfaces</depend>
-  <depend>energy_detector</depend>
-  
-  <test_depend>ament_copyright</test_depend>
-  <test_depend>ament_flake8</test_depend>
-  <test_depend>ament_pep257</test_depend>
-  <test_depend>python3-pytest</test_depend>
+
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
 
   <export>
-    <build_type>ament_python</build_type>
+    <build_type>ament_cmake</build_type>
   </export>
 </package>
