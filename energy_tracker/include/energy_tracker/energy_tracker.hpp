@@ -18,27 +18,33 @@
 #include "energy_extended_kalman_filter.hpp"
 #include "auto_aim_interfaces/msg/leaf.hpp"
 #include "auto_aim_interfaces/msg/leafs.hpp"
-
+#include <opencv2/opencv.hpp>
 namespace rm_auto_aim
 {
-    class EnTarcker
+    class EnTracker
     {
-        public:
-        EnTarcker();
-        double angleSolver(auto_aim_interfaces::msg::Leaf leaf);
+    public:
+        EnTracker();
+        float angleSolver(auto_aim_interfaces::msg::Leaf leaf);
         using Leafs = auto_aim_interfaces::msg::Leafs;
         using Leaf = auto_aim_interfaces::msg::Leaf;
-        void init(const Leaf & leafs_msg);
-        void update(const Leaf & leafs_msg);
-        Eigen::VectorXd target_state;
+        void init(const Leaf &leafs_msg);
+        void update(const Leaf &leafs_msg);
         ExtendedKalmanFilter ekf;
+        Eigen::VectorXd target_state;
         Eigen::VectorXd measurement;
-        private:
-        void initEKF(const Leaf & a);
+        enum State
+        {
+            LOST,
+            DETECTING,
+            TRACKING,
+            TEMP_LOST,
+        } tracker_state;
+
+    private:
+        void initEKF(const Leaf &a);
         Leaf tracked_leaf;
-
     };
-
 
 }
 #endif

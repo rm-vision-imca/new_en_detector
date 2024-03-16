@@ -30,7 +30,7 @@ namespace rm_auto_aim{
 class EnergyDetector : public rclcpp::Node {
 public:
     EnergyDetector(const rclcpp::NodeOptions& options);
-    cv::Mat VideoTest(cv::Mat &img);
+    cv::Mat VideoTest(cv::Mat &img,cv::Mat &bin);
     long long int count=0;
     long double sum_latency=0;
 private:

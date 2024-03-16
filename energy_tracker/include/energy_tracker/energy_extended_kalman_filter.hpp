@@ -3,7 +3,8 @@
 
 #include <Eigen/Dense>
 #include <functional>
-
+#include <rclcpp/logger.hpp>
+#include "rclcpp/rclcpp.hpp"
 namespace rm_auto_aim
 {
 
@@ -22,12 +23,12 @@ public:
   void setState(const Eigen::VectorXd & x0);
   // Compute a predicted state
   Eigen::MatrixXd predict();
-
+  float t=0.08;  //  predict time
   // Update the estimated state based on measurement
   Eigen::MatrixXd update(const Eigen::VectorXd & z);
   
 private:
-  double t=1.0;  //  predict time
+  
   // Posteriori state
   Eigen::VectorXd x_post; // State vector
   // Priori state

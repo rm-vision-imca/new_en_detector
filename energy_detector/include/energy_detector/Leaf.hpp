@@ -6,12 +6,6 @@ namespace rm_auto_aim
 {
     const int RED = 0;
     const int BLUE = 1;
-    const std::string LEAF_TYPE_STR[2] = {"INVALID", "VALID"};
-    enum class LeafType
-    {
-        INVALID = 0,
-        VALID = 1
-    };
     enum LeafPointType
     {
         TOP_LEFT = 0,
@@ -26,14 +20,13 @@ namespace rm_auto_aim
         cv::Rect_<float> rect;
         int label;
         float prob;
-        LeafType leaf_type;
+        bool leaf_type;
         /*
         @param [0]top_left
         @param [1]bottom_left
-        @param [2]R
-        @param [3]bottom_right
-        @param [4]top_right
-        @param [5]center_point
+        @param [2]bottom_right
+        @param [3]top_right
+        @param [4]center_point
         */
         std::vector<cv::Point2f> kpt;
     };

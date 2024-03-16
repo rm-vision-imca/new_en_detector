@@ -15,11 +15,10 @@
 #include <string>
 #include <vector>
 
-#include "energy_extended_kalman_filter.hpp"
 #include "auto_aim_interfaces/msg/leafs.hpp"
 #include "auto_aim_interfaces/msg/en_target.hpp"
-#include "auto_aim_interfaces/msg/tracker_info.hpp"
-#include "energy_tracker.hpp"
+#include "auto_aim_interfaces/msg/tracker2_d.hpp"
+#include "energy_tracker/energy_tracker.hpp"
 
 namespace rm_auto_aim
 {
@@ -31,12 +30,15 @@ namespace rm_auto_aim
     
   private:
     void LeafsCallback(const auto_aim_interfaces::msg::Leafs::SharedPtr leafs_msg);
-
+    const int v=710;
+    float angle0,angle1;
+    float Gravity_compensation(double bottom_len, double angle_0, double z);
     // The time when the last message was received
     rclcpp::Time last_time_;
-    double t_;
-    // Armor tracker
-    std::unique_ptr<EnTarcker> tracker_;
+    double dt_;
+    short rad_destation=-1;
+    // energy tracker
+    std::unique_ptr<EnTracker> tracker_;
     // Subscriber with tf2 message_filter
     std::string target_frame_;
     std::shared_ptr<tf2_ros::Buffer> tf2_buffer_;
@@ -44,5 +46,6 @@ namespace rm_auto_aim
     message_filters::Subscriber<auto_aim_interfaces::msg::Leafs> leafs_sub_;
     std::shared_ptr<tf2_filter> tf2_filter_;
     rclcpp::Publisher<auto_aim_interfaces::msg::EnTarget>::SharedPtr target_pub_;
+    rclcpp::Publisher<auto_aim_interfaces::msg::Tracker2D>::SharedPtr target_2d_pub_;
   };
 }

@@ -8,8 +8,8 @@ namespace rm_auto_aim
     result_img = input.clone();
     auto leafs = work(result_img);
     // std::cout << "detect step2" << std::endl;
-    R_Point=findR(input);
     leafs_ = Leaf_filter(leafs, input.cols, input.rows);
+    R_Point=findR(input);
     // std::cout << "detect success" << std::endl;
     return leafs_;
   }
@@ -221,24 +221,19 @@ namespace rm_auto_aim
         keypoints_center = cv::Point2f(x0 + leaf.rect.width / 2, y0 + leaf.rect.height / 2);
       }
       leaf.kpt.emplace_back(keypoints_center);
-      LeafType type;
+      leaf.leaf_type=true;
       for (size_t i = 0; i < leaf.kpt.size(); i++)
       {
         if (
             leaf.kpt[i].x < 0 or leaf.kpt[i].x > MAX_WIDTH or leaf.kpt[i].y < 0 or
             leaf.kpt[i].x > MAX_HEIGHT or leaf.kpt[i].x < 0 or leaf.kpt[i].x > MAX_WIDTH or
-            leaf.kpt[i].y < 0 or leaf.kpt[i].y > MAX_HEIGHT)
+            leaf.kpt[i].y < 0 or leaf.kpt[i].y > MAX_HEIGHT or R_Point.x<=0 or R_Point.y<=0)
         {
 
-          type = LeafType::INVALID;
+          leaf.leaf_type = false;
           break;
         }
-        type = LeafType::VALID;
       }
-      if (type == LeafType::VALID)
-        leaf.leaf_type = LeafType::VALID;
-      else
-        leaf.leaf_type = LeafType::INVALID;
       result.emplace_back(leaf);
     }
     return result;
@@ -263,12 +258,13 @@ namespace rm_auto_aim
       {
         cv::circle(src, point, 5, cv::Scalar(255, 0, 255), -1);
       }
+      cv::circle(src,R_Point,5, cv::Scalar(255, 0, 255), -1);
     }
   }
   cv::Point2f En_Detector::findR(cv::Mat src)
   {
     GaussianBlur(src, src, cv::Size(5, 5), 1.0);
-    cv::Point2f R_;
+    cv::Point2f R_,result;
     std::vector<cv::Mat> channels;
     cv::split(src, channels);
     this->detect_color == RED ? cv::threshold(channels[2] * 1.2 - channels[0], bin, binary_thres, 255, cv::THRESH_BINARY) : cv::threshold(channels[0] * 0.9 - channels[2], bin, 100, 255, cv::THRESH_BINARY);
@@ -283,7 +279,7 @@ namespace rm_auto_aim
       for (size_t i = 0; i < contours.size(); i++)
       {
         // cout<<"contourArea: "<<contourArea(contours[i])<<endl;
-        if (cv::contourArea(contours[i]) >= 100 && contourArea(contours[i]) <= 2000)
+        if (cv::contourArea(contours[i]) >= 100 && contourArea(contours[i]))
         {
           // std::cout << "contourArea ture: " << contourArea(contours[i]) << std::endl;
           cv::Rect rect = boundingRect(contours[i]);
@@ -293,9 +289,11 @@ namespace rm_auto_aim
           std::vector<cv::Vec4i> hiearachy_test_;
           cv::findContours(ROI, contours_, hiearachy_test_, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
           R_ = cv::Point2f(rect.x + rect.width / 2, rect.y + rect.height / 2);
+          float x=leafs_[0].kpt[4].x-R_.x,y=leafs_[0].kpt[4].y-R_.y;
+          if(sqrt(x*x+y*y)>100)result=R_;
         }
       }
     }
-    return R_;
+    return result;
   }
 } // namespace rm_auto_aim

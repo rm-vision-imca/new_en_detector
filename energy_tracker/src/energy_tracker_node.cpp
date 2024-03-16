@@ -6,10 +6,14 @@
 
 namespace rm_auto_aim
 {
+
    EnergyTrackerNode::EnergyTrackerNode(const rclcpp::NodeOptions &options)
-       : Node("energy_tarcker", options)
+       : Node("energy_tracker", options)
    {
       RCLCPP_INFO(this->get_logger(), "Starting EnergyTarckerNode!");
+      
+      tracker_ = std::make_unique<EnTracker>();
+      tracker_->ekf=ExtendedKalmanFilter();
       // Subscriber with tf2 message_filter
       // tf2 relevant
       tf2_buffer_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
@@ -30,6 +34,14 @@ namespace rm_auto_aim
       // Publisher
       target_pub_ = this->create_publisher<auto_aim_interfaces::msg::EnTarget>(
           "/tracker/EnTarget", rclcpp::SensorDataQoS());
+      target_2d_pub_ = this->create_publisher<auto_aim_interfaces::msg::Tracker2D>("tracker/LeafTarget2D", rclcpp::SensorDataQoS());
+   }
+   float EnergyTrackerNode::Gravity_compensation(double bottom_len, double angle_0, double z)
+   {
+      const double g = 9.788; // m/s
+      double t = bottom_len / (v * cos(angle_0));
+      double h = g * t * t / 2.0;
+      return atan2(z + h, bottom_len) * 180 / M_PI;
    }
    void EnergyTrackerNode::LeafsCallback(const auto_aim_interfaces::msg::Leafs::SharedPtr leafs_msg)
    {
@@ -48,6 +60,7 @@ namespace rm_auto_aim
       geometry_msgs::msg::PoseStamped ps;
       ps.header = leafs_msg->header;
       ps.pose = leaf_.pose;
+      if(!leaf_.type)return;
       try
       {
          leaf_.pose = tf2_buffer_->transform(ps, target_frame_).pose;
@@ -57,29 +70,48 @@ namespace rm_auto_aim
          RCLCPP_ERROR(get_logger(), "Error while transforming %s", ex.what());
          return;
       }
-
       // Init message
       // auto_aim_interfaces::msg::TrackerInfo info_msg;
       auto_aim_interfaces::msg::EnTarget target_msg;
+      auto_aim_interfaces::msg::Tracker2D target_msg_2d;
       rclcpp::Time time = leafs_msg->header.stamp;
       target_msg.header.stamp = time;
       target_msg.header.frame_id = target_frame_;
-
       // Update tracker
-      tracker_->init(leaf_);
-      t_ = (time - last_time_).seconds();
+      if(tracker_->tracker_state==EnTracker::LOST){
+         tracker_->init(leaf_);
+         angle0=tracker_->angleSolver(leaf_);
+         tracker_->tracker_state=EnTracker::TRACKING;
+         return;
+      }
+      angle1=tracker_->angleSolver(leaf_);
+      if(rad_destation==0)rad_destation=angle1-angle0<0?-1:1;
+      dt_ = (time - last_time_).seconds();
+      tracker_->ekf.t=dt_;
       tracker_->update(leaf_);
       const auto &state = tracker_->target_state;
-      double angle_ = state(0);
+      double angle_ = state(0),angle_v=state(1);
+      RCLCPP_INFO(rclcpp::get_logger("energy_tracker"), "predict angle:%f,angle_v:%f",angle_*180/M_PI,angle_v*tracker_->ekf.t);
       Eigen::Vector2d p1(leaf_.leaf_center.z, leaf_.leaf_center.y);
       Eigen::Vector2d p2(leaf_.r_center.z, leaf_.r_center.y);
       double r_distance = (p1 - p2).norm();
-      target_msg.position.y = r_distance * cos(angle_);
-      target_msg.position.z = r_distance * sin(angle_);
+      target_msg.position.x = leaf_.pose.position.x;
+      target_msg.position.y = leaf_.r_center.y+r_distance*cos(angle_)*rad_destation;
+      target_msg.position.z = leaf_.r_center.z+r_distance*sin(angle_)*rad_destation;
+      RCLCPP_INFO(rclcpp::get_logger("energy_tracker"), "predict x:%f,predict y:%f",target_msg.position.z,target_msg.position.y);
       target_msg.angle = angle_;
+      target_msg_2d.x = target_msg.position.y;
+      target_msg_2d.y = target_msg.position.z;
+      target_msg.yaw = atan2(target_msg.position.x, target_msg.position.y) * 180 / M_PI;
+      double bottom_len = sqrt(pow(target_msg.position.x, 2.0) + pow(target_msg.position.y, 2.0));
+      target_msg.pitch = atan2(target_msg.position.z, bottom_len); //   pitch angle
+      target_msg.pitch = Gravity_compensation(bottom_len, target_msg.pitch, target_msg.position.x);
       last_time_ = time;
+      
       target_pub_->publish(target_msg);
+      target_2d_pub_->publish(target_msg_2d);
    }
+
 } // namespace rm_auto_aim
 #include "rclcpp_components/register_node_macro.hpp"
 

@@ -1,5 +1,4 @@
 #include "energy_tracker/energy_extended_kalman_filter.hpp"
-
 namespace rm_auto_aim
 {
 ExtendedKalmanFilter::ExtendedKalmanFilter()
@@ -45,10 +44,11 @@ ExtendedKalmanFilter::ExtendedKalmanFilter()
   
 }
 
-void ExtendedKalmanFilter::setState(const Eigen::VectorXd & x0) { x_post = x0; }
+void ExtendedKalmanFilter::setState(const Eigen::VectorXd & x0) {x_post = x0; }
 
 Eigen::MatrixXd ExtendedKalmanFilter::predict()
 {
+  
   x_pri = F * x_post;
   P = F * P * F.transpose() + Q;
   x_post = x_pri;
@@ -57,6 +57,7 @@ Eigen::MatrixXd ExtendedKalmanFilter::predict()
 
 Eigen::MatrixXd ExtendedKalmanFilter::update(const Eigen::VectorXd & z)
 {
+  RCLCPP_DEBUG(rclcpp::get_logger("energy_tracker"), "EKF update");
   Eigen::VectorXd y = z - H * x_post;
   Eigen::MatrixXd S = H * P * H.transpose() + R;
   Eigen::MatrixXd K = P * H.transpose() * S.inverse();
