@@ -4,13 +4,10 @@ namespace rm_auto_aim
 {
   std::vector<Leaf> En_Detector::detect(const cv::Mat &input)
   {
-    // std::cout << "detect step1" << std::endl;
     result_img = input.clone();
     auto leafs = work(result_img);
-    // std::cout << "detect step2" << std::endl;
     leafs_ = Leaf_filter(leafs, input.cols, input.rows);
-    R_Point=findR(input);
-    // std::cout << "detect success" << std::endl;
+    R_Point = findR(input);
     return leafs_;
   }
 
@@ -44,20 +41,15 @@ namespace rm_auto_aim
 
     // Preprocess the image
     cv::Mat boxed = letter_box(src_img);
-    // std::cout << "get letter_box" << std::endl;
     float scale = boxed.size[0] / IMG_SIZE;
     cv::Mat blob = cv::dnn::blobFromImage(boxed, 1.0 / 255.0, cv::Size(IMG_SIZE, IMG_SIZE), cv::Scalar(), true);
-    // std::cout << "blobFromImage" << std::endl;
     //  Create tensor from external memory
     ov::Tensor input_tensor(input_port.get_element_type(), input_port.get_shape(), blob.ptr(0));
-    // std::cout << "input_tensor" << std::endl;
     //  Set input tensor for model with one input
     infer_request.set_input_tensor(input_tensor);
-    // std::cout << "set_input_tensor" << std::endl;
     // infer_request.infer();
     infer_request.start_async();
     infer_request.wait();
-    // std::cout << "infering" << std::endl;
     auto output = infer_request.get_output_tensor(0);
     auto output_shape = output.get_shape();
     // Postprocess the result
@@ -221,13 +213,13 @@ namespace rm_auto_aim
         keypoints_center = cv::Point2f(x0 + leaf.rect.width / 2, y0 + leaf.rect.height / 2);
       }
       leaf.kpt.emplace_back(keypoints_center);
-      leaf.leaf_type=true;
+      leaf.leaf_type = true;
       for (size_t i = 0; i < leaf.kpt.size(); i++)
       {
         if (
             leaf.kpt[i].x < 0 or leaf.kpt[i].x > MAX_WIDTH or leaf.kpt[i].y < 0 or
             leaf.kpt[i].x > MAX_HEIGHT or leaf.kpt[i].x < 0 or leaf.kpt[i].x > MAX_WIDTH or
-            leaf.kpt[i].y < 0 or leaf.kpt[i].y > MAX_HEIGHT or R_Point.x<=0 or R_Point.y<=0)
+            leaf.kpt[i].y < 0 or leaf.kpt[i].y > MAX_HEIGHT or R_Point.x <= 0 or R_Point.y <= 0)
         {
 
           leaf.leaf_type = false;
@@ -258,13 +250,14 @@ namespace rm_auto_aim
       {
         cv::circle(src, point, 5, cv::Scalar(255, 0, 255), -1);
       }
-      cv::circle(src,R_Point,5, cv::Scalar(255, 0, 255), -1);
+      cv::circle(src, R_Point, 5, cv::Scalar(255, 0, 255), -1);
     }
   }
   cv::Point2f En_Detector::findR(cv::Mat src)
   {
+    if(leafs_.empty())return cv::Point2f(0,0);
     GaussianBlur(src, src, cv::Size(5, 5), 1.0);
-    cv::Point2f R_,result;
+    cv::Point2f R_, result;
     std::vector<cv::Mat> channels;
     cv::split(src, channels);
     this->detect_color == RED ? cv::threshold(channels[2] * 1.2 - channels[0], bin, binary_thres, 255, cv::THRESH_BINARY) : cv::threshold(channels[0] * 0.9 - channels[2], bin, 100, 255, cv::THRESH_BINARY);
@@ -273,15 +266,13 @@ namespace rm_auto_aim
     cv::dilate(bin, bin, kernel_5_5);
     std::vector<std::vector<cv::Point>> contours;
     std::vector<cv::Vec4i> hiearachy_test;
-    cv::findContours(bin, contours, hiearachy_test, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_NONE);
+    cv::findContours(bin, contours, hiearachy_test, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
     if (contours.size() > 0)
     {
       for (size_t i = 0; i < contours.size(); i++)
       {
-        // cout<<"contourArea: "<<contourArea(contours[i])<<endl;
-        if (cv::contourArea(contours[i]) >= 100 && contourArea(contours[i]))
+        if (cv::contourArea(contours[i]) >= 150&&contourArea(contours[i])<=650)
         {
-          // std::cout << "contourArea ture: " << contourArea(contours[i]) << std::endl;
           cv::Rect rect = boundingRect(contours[i]);
           cv::Mat ROI = cv::Mat(bin, rect);
           cv::resize(ROI, ROI, cv::Size(50, 50));
@@ -289,8 +280,13 @@ namespace rm_auto_aim
           std::vector<cv::Vec4i> hiearachy_test_;
           cv::findContours(ROI, contours_, hiearachy_test_, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
           R_ = cv::Point2f(rect.x + rect.width / 2, rect.y + rect.height / 2);
-          float x=leafs_[0].kpt[4].x-R_.x,y=leafs_[0].kpt[4].y-R_.y;
-          if(sqrt(x*x+y*y)>100)result=R_;
+          
+          float x = leafs_[0].kpt[4].x - R_.x, y = leafs_[0].kpt[4].y - R_.y;
+          float tmp = sqrt(x * x + y * y);
+          if (tmp > 80)
+          {
+            result = R_;
+          }
         }
       }
     }

@@ -76,7 +76,6 @@ namespace rm_auto_aim
         result_img, latency_s, cv::Point(10, 30), cv::FONT_HERSHEY_SIMPLEX, 1.0, cv::Scalar(0, 255, 0), 2);
     bin = detector_->bin;
     auto_aim_interfaces::msg::Leaf leaf_msg;
-    // printf("r_X:%f,r_Y:%f",detector_->R_Point.x,detector_->R_Point.y);
     for (const auto &leaf : leafs)
     {
       // leaf info
@@ -91,12 +90,10 @@ namespace rm_auto_aim
       leaf_msg.type = leaf.leaf_type;
       // R info
       leaf_msg.r_center.x = 0;
-      leaf_msg.r_center.y = detector_->R_Point.x;//y-->x
-      leaf_msg.r_center.z = detector_->R_Point.y;//z-->y
+      leaf_msg.r_center.y = detector_->R_Point.x; // y-->x
+      leaf_msg.r_center.z = detector_->R_Point.y; // z-->y
       leafs_msg_.leafs.emplace_back(leaf_msg);
-      leaf_msg.type=leaf.leaf_type;
     }
-
     leafs_msg_.header.frame_id = "gimbal_link";
     leafs_pub_->publish(leafs_msg_);
     return result_img;

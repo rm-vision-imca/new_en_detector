@@ -35,19 +35,20 @@ private:
             t.child_frame_id = "gimbal_link";
             tf2::Quaternion q;
             q.setRPY(0, 0, 0);
-            q.setX(0);q.setY(0);q.setZ(0);
+            q.setX(0);
+            q.setY(0);
+            q.setZ(0);
             t.transform.rotation = tf2::toMsg(q);
             tf_broadcaster_->sendTransform(t);
         }
     }
-    double timestamp_offset_=0.05;
+    double timestamp_offset_ = 0.05;
     rclcpp::Subscription<auto_aim_interfaces::msg::Tracker2D>::SharedPtr Test_Sub;
     void Test_SubCallback(const auto_aim_interfaces::msg::Tracker2D::SharedPtr Point)
     {
         RCLCPP_INFO(this->get_logger(), "x:%.2f y:%.2f", Point->x, Point->y);
         pre_Point.x = Point->x;
         pre_Point.y = Point->y;
-        //std::cout << Point->x << " " << Point->y << std::endl;
     }
     std::thread receive_thread_;
 };
@@ -64,11 +65,9 @@ TEST(energy_detector, test_node_video)
 
     auto node = std::make_shared<rm_auto_aim::EnergyDetector>(options);
     auto test_node = std::make_shared<Test_node>(options);
-    std::string video_name[]={"buff_blue.mp4","2xfile.mp4","file.mp4","比赛打符高环数合集.mp4","环数检测视频.mp4","快速激活大能量机关视频.mp4","en1.mp4"};
-    std::string video_path = std::string(TEST_DIR) + "/video/"+video_name[2];
-    //std::cout << "读取视频中\n";
+    std::string video_name[] = {"buff_blue.mp4", "2xfile.mp4", "file.mp4", "比赛打符高环数合集.mp4", "环数检测视频.mp4", "快速激活大能量机关视频.mp4", "en1.mp4"};
+    std::string video_path = std::string(TEST_DIR) + "/video/" + video_name[1];
     cv::VideoCapture cap(video_path);
-    //std::cout << "初始化成功\n";
     cv::Mat bin;
     while (true)
     {
@@ -79,17 +78,18 @@ TEST(energy_detector, test_node_video)
         if (frame.empty())
             break;
         cv::imshow("src", frame);
+        cv::waitKey(10);
         cv::Mat color_frame = frame.clone();
-        color_frame = node->VideoTest(color_frame,bin);
+        color_frame = node->VideoTest(color_frame, bin);
         cv::circle(color_frame, test_node->pre_Point, 5, cv::Scalar(0, 0, 255), -1);
         cv::imshow("color_frame", color_frame);
+        cv::waitKey(10);
         cv::imshow("bin", bin);
-        cv::waitKey(30);
-        if (!cap.read(frame))
-            break;
+        cv::waitKey(10);
     }
-    std::cout<<"avg latency:"<<node->sum_latency/node->count<<std::endl;
+    std::cout << "avg latency:" << node->sum_latency / node->count << std::endl;
 }
+
 int main(int argc, char **argv)
 {
     testing::InitGoogleTest(&argc, argv);

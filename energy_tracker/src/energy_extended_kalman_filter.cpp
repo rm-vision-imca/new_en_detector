@@ -1,7 +1,7 @@
 #include "energy_tracker/energy_extended_kalman_filter.hpp"
 namespace rm_auto_aim
 {
-ExtendedKalmanFilter::ExtendedKalmanFilter()
+ExtendedKalmanFilter::ExtendedKalmanFilter(const VoidMatFunc & u_f):u_f(u_f)
 {
   int n = 3; // State vector size: [angle, Angular_velocity,Angular_a]
   int m = 1; // Measurement vector size: [angle]
@@ -21,9 +21,9 @@ ExtendedKalmanFilter::ExtendedKalmanFilter()
 
 
   // State transition matrix
-  F << 1*t, 1*t, 0.5*t*t,
-       0,   1,    1*t,
-       0,   0,    1;
+  // F << 1*t, 1*t, 0.5*t*t,
+  //      0,   1,    1*t,
+  //      0,   0,    1;
 
   // Process covariance matrix
   Q << 0.1, 0, 0,
@@ -37,9 +37,9 @@ ExtendedKalmanFilter::ExtendedKalmanFilter()
   R << 0.1;
 
   // Initial estimate error covariance
-  P << 1, 0, 0,
-       0, 1, 0,
-       0, 0, 1;
+  P << 0.05, 0, 0,
+       0, 0.05, 0,
+       0, 0, 0.05;
       
   
 }
@@ -48,7 +48,7 @@ void ExtendedKalmanFilter::setState(const Eigen::VectorXd & x0) {x_post = x0; }
 
 Eigen::MatrixXd ExtendedKalmanFilter::predict()
 {
-  
+  F=u_f();
   x_pri = F * x_post;
   P = F * P * F.transpose() + Q;
   x_post = x_pri;

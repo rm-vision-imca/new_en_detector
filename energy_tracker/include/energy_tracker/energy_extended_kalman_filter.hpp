@@ -11,25 +11,25 @@ namespace rm_auto_aim
 class ExtendedKalmanFilter
 {
 public:
-  ExtendedKalmanFilter();
   using VecVecFunc = std::function<Eigen::VectorXd(const Eigen::VectorXd &)>;
   using VecMatFunc = std::function<Eigen::MatrixXd(const Eigen::VectorXd &)>;
   using VoidMatFunc = std::function<Eigen::MatrixXd()>;
+  ExtendedKalmanFilter() = default;
+  explicit ExtendedKalmanFilter(const VoidMatFunc & u_f);
 
-  explicit ExtendedKalmanFilter(
-    const VecVecFunc & f, const VecVecFunc & h, const VecMatFunc & j_f, const VecMatFunc & j_h,
-    const VoidMatFunc & u_q, const VecMatFunc & u_r, const Eigen::MatrixXd & P0);
+  
   // Set the initial state
   void setState(const Eigen::VectorXd & x0);
   // Compute a predicted state
   Eigen::MatrixXd predict();
-  float t=0.08;  //  predict time
+  float t;  //  predict time
   // Update the estimated state based on measurement
   Eigen::MatrixXd update(const Eigen::VectorXd & z);
   
 private:
   
   // Posteriori state
+  VoidMatFunc u_f;
   Eigen::VectorXd x_post; // State vector
   // Priori state
   Eigen::VectorXd x_pri;

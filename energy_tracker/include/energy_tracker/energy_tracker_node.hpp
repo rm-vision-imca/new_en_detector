@@ -36,7 +36,7 @@ namespace rm_auto_aim
     // The time when the last message was received
     rclcpp::Time last_time_;
     double dt_;
-    short rad_destation=-1;
+    short rad_destation=0;
     // energy tracker
     std::unique_ptr<EnTracker> tracker_;
     // Subscriber with tf2 message_filter
